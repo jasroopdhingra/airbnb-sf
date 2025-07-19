@@ -5,14 +5,10 @@ import altair as alt
 st.set_page_config(layout="wide")
 st.title("San Francisco Airbnb Dashboard 🌁")
 
-# -------------------------
-# Load & Clean Data
-# -------------------------
 @st.cache_data
 def load_data():
     df = pd.read_csv("listings.csv")
 
-    # Keep only what we need for all three charts
     keep_cols = [
         "neighbourhood_group_cleansed", "neighbourhood_cleansed",
         "room_type", "price", "latitude", "longitude",
@@ -20,30 +16,23 @@ def load_data():
     ]
     df = df[keep_cols]
 
-    # Clean price column
     df["price"] = pd.to_numeric(
         df["price"].astype(str).replace(r"[\$,]", "", regex=True),
         errors="coerce"
     )
 
-    # Coerce numeric columns just in case
     df["estimated_revenue_l365d"] = pd.to_numeric(df["estimated_revenue_l365d"], errors="coerce")
     df["number_of_reviews"]      = pd.to_numeric(df["number_of_reviews"], errors="coerce")
 
-    # Drop rows with any NA required for charts
     df = df.dropna(subset=["price", "latitude", "longitude",
                            "estimated_revenue_l365d", "number_of_reviews"])
 
-    # Reasonable bounds to keep charts readable
     df = df[(df["price"] < 1000) & (df["estimated_revenue_l365d"] < 500_000)]
 
     return df
 
 df = load_data()
- 
-# -------------------------
-# Sidebar Filters
-# -------------------------
+
 st.sidebar.header("🔍 Filter Listings")
 
 room_type = st.sidebar.selectbox("Room Type", df["room_type"].unique())
@@ -53,9 +42,7 @@ price_limit = st.sidebar.slider(
 
 filtered_df = df[(df["room_type"] == room_type) & (df["price"] <= price_limit)]
 
-# -------------------------
-# 1 · Scatter: Reviews vs Revenue
-# -------------------------
+
 st.subheader("📈 Estimated Revenue vs. Number of Reviews")
 
 scatter = (
@@ -75,10 +62,8 @@ scatter = (
 
 st.altair_chart(scatter, use_container_width=True)
 
-# -------------------------
-# 2 · Histogram: Price Distribution
-# -------------------------
-st.subheader("💸 Price Distribution")
+
+st.subheader("💲 Price Distribution")
 
 hist = (
     alt.Chart(filtered_df)
@@ -93,9 +78,7 @@ hist = (
 
 st.altair_chart(hist, use_container_width=True)
 
-# -------------------------
-# 3 · Bar: Median Price by Neighborhood (Interactive)
-# -------------------------
+
 st.subheader("🏘️ Median Price by Neighborhood")
 
 sel = alt.selection_multi(fields=["neighbourhood_cleansed"], bind="legend")
